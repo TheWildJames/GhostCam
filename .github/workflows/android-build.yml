@@ -34,28 +34,48 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
       
-    - name: Build project and run tests
-      run: ./gradlew build
+    - name: Clean and build project
+      run: ./gradlew clean build
       
-    - name: Build debug APK
-      run: ./gradlew assembleDebug
-      
-    - name: Build release APK
-      run: ./gradlew assembleRelease
+    - name: List build outputs
+      run: find . -name "*.apk" -type f
       
     - name: Upload debug APK
       uses: actions/upload-artifact@v4
+      if: always()
       with:
         name: ghostcam-debug-apk
-        path: app/build/outputs/apk/debug/*.apk
+        path: |
+          app/build/outputs/apk/debug/*.apk
+          **/build/outputs/apk/debug/*.apk
         retention-days: 30
+        if-no-files-found: warn
         
     - name: Upload release APK
       uses: actions/upload-artifact@v4
+      if: always()
       with:
         name: ghostcam-release-apk
-        path: app/build/outputs/apk/release/*.apk
+        path: |
+          app/build/outputs/apk/release/*.apk
+          **/build/outputs/apk/release/*.apk
         retention-days: 30
+        if-no-files-found: warn
+        
+    - name: Run tests
+      run: ./gradlew test
+      continue-on-error: true
+      
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: |
+          app/build/reports/tests/
+          **/build/reports/tests/
+        retention-days: 30
+        if-no-files-found: warn
 
   release:
     needs: build
